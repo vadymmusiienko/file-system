@@ -1,0 +1,6 @@
+# Build output
+bin/*
+!bin/.README
+
+# Generated disk image
+sys/empty-fs.iso
