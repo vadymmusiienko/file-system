@@ -12,7 +12,7 @@ void get_disk_name(char *to_ret) {
 
     // fgets(to_ret, MAX_DISK_NAME_LEN, cfg);
 
-    if (strncpy(to_ret, "sys/", (size_t) 5) == NULL) {
+    if (strncpy(to_ret, "sys/", (size_t)5) == NULL) {
         fprintf(stderr, "Could not setup buffer for reading disk name...\n");
         __builtin_trap();
     }
@@ -67,11 +67,38 @@ void read_disk_block(long frame_id, char *buf) {
     }
 }
 
+// void write_disk_block(long frame_id, const char *buf) {
+//     char disk_name[MAX_DISK_NAME_LEN];
+//     get_disk_name(disk_name);
+//
+//     FILE *disk = fopen(disk_name, "w+");
+//     if (!disk) {
+//         fprintf(stderr, "Could not open disk...\n");
+//         __builtin_trap();
+//     }
+//
+//     // move the cursor to the location in the disk
+//     fseek(disk, FRAME_LEN * frame_id, SEEK_SET);
+//
+//     long n = strlen(buf) > FRAME_LEN ? FRAME_LEN : strlen(buf);
+//     long bytes_written = 0;
+//     long result;
+//     while ((result = fwrite(buf, 1, n - bytes_written, disk)) > 0) {
+//         bytes_written += result;
+//     }
+//
+//     if (fclose(disk) == EOF) {
+//         fprintf(stderr, "Error closing disk...\n");
+//         __builtin_trap();
+//     }
+// }
+
 void write_disk_block(long frame_id, const char *buf) {
     char disk_name[MAX_DISK_NAME_LEN];
     get_disk_name(disk_name);
 
-    FILE *disk = fopen(disk_name, "w+");
+    // NOTE: Fix truncating bug (w+ to r+)
+    FILE *disk = fopen(disk_name, "r+");
     if (!disk) {
         fprintf(stderr, "Could not open disk...\n");
         __builtin_trap();
@@ -80,7 +107,9 @@ void write_disk_block(long frame_id, const char *buf) {
     // move the cursor to the location in the disk
     fseek(disk, FRAME_LEN * frame_id, SEEK_SET);
 
-    long n = strlen(buf) > FRAME_LEN ? FRAME_LEN : strlen(buf);
+    // NOTE: Fix len bug (always write the entire block)
+    // long n = strlen(buf) > FRAME_LEN ? FRAME_LEN : strlen(buf);
+    long n = FRAME_LEN;
     long bytes_written = 0;
     long result;
     while ((result = fwrite(buf, 1, n - bytes_written, disk)) > 0) {
