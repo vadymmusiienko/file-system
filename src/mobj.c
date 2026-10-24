@@ -89,31 +89,87 @@ void mobj_get_pframe(mobj_t *o, long pagenum, pframe_t **pfp) {
 }
 
 /*
- * TODO: implement me!
- *
- * Hints:
- *   - pos describes where to read from in terms of bytes
- *   - len is the maximum number of bytes to read... when can we not read all
- *     of the way up to len?
- *   - save what we read to buf
+ * Read up to len bytes starting at byte pos into buf
+ * Only reads from pframes that are already in memory
+ * Returns the number of bytes read, or -1
  */
-long mobj_read(mobj_t *o, long pos, long len, char *buf) { return -1; }
+long mobj_read(mobj_t *o, long pos, long len, char *buf) {
+    if (pos < 0 || len < 0) {
+        return -1;
+    }
+
+    long bytes_read = 0;
+    while (bytes_read < len) {
+        // Which page holds byte pos and where within the page
+        long pagenum = pos / FRAME_LEN;
+        long offset = pos % FRAME_LEN;
+
+        // Not in memory - stop
+        pframe_t *pframe;
+        mobj_find_pframe(o, pagenum, &pframe);
+        if (pframe == NULL) {
+            break;
+        }
+
+        // Copy until the end of this page or until we have len bytes
+        long chunk = FRAME_LEN - offset;
+        if (chunk > len - bytes_read) {
+            chunk = len - bytes_read;
+        }
+        memcpy(buf + bytes_read, pframe->bytes + offset, chunk);
+
+        bytes_read += chunk;
+        pos += chunk;
+    }
+
+    return bytes_read;
+}
 
 /*
- * TODO: implement me!
  *
- * Hints:
- *   - pos describes where to write to in terms of bytes
- *   - len is the maximum number of bytes to write... when can we not read all
- *     of the way up to len?
- *   - save what we read to buf
+ * Write up to len bytes from buf starting at byte pos
+ * Only writes to pframes already in memory
+ * Returns number of bytes written, or -1
  */
-long mobj_write(mobj_t *o, long pos, long len, const char *buf) { return -1; }
+long mobj_write(mobj_t *o, long pos, long len, const char *buf) {
+    if (pos < 0 || len < 0) {
+        return -1;
+    }
+
+    long bytes_written = 0;
+    while (bytes_written < len) {
+        // Which page holds byte pos and where within the page
+        long pagenum = pos / FRAME_LEN;
+        long offset = pos % FRAME_LEN;
+
+        // Not in memory - stop
+        pframe_t *pframe;
+        mobj_find_pframe(o, pagenum, &pframe);
+        if (pframe == NULL) {
+            break;
+        }
+
+        // Write until the end of this page or until we have len bytes
+        long chunk = FRAME_LEN - offset;
+        if (chunk > len - bytes_written) {
+            chunk = len - bytes_written;
+        }
+        memcpy(pframe->bytes + offset, buf + bytes_written, chunk);
+
+        bytes_written += chunk;
+        pos += chunk;
+    }
+
+    return bytes_written;
+}
 
 /*
- * TODO: implement me!
- *
- * Hints:
- *   - make sure that disk is up to date in the places that we care about!
+ * Since we don't have a dirty bit, flush everything
  */
-void mobj_flush(mobj_t *o) {}
+void mobj_flush(mobj_t *o) {
+    for (list_link_t *link = o->mo_pframes.head; link != NULL;
+         link = link->next) {
+        pframe_t *pframe = (pframe_t *)link->parent;
+        o->mo_ops.write_pframe(o, pframe);
+    }
+}
