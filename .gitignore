@@ -4,3 +4,7 @@ bin/*
 
 # Generated disk image
 sys/empty-fs.iso
+
+# Other
+compile_flags.txt
+.clang-format
