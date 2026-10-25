@@ -42,6 +42,8 @@ typedef struct svfs_inode {
 
     long svi_direct_blocks[SV_NDIRECT_BLKS]; // pointer to direct blocks
     long svi_indirect_block;                 // pointer to indirect block
+    // NOTE: Had to add this
+    long svi_mode; // REGULAR or DIRECTORY (vn_mode_t), or -1 if free
 } svfs_inode_t;
 
 typedef struct svfs_node {

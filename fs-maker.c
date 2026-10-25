@@ -10,7 +10,8 @@
 #define SV_INODE_START (SV_SUPER_BLOCK + 1)         // block 1
 #define SV_DATA_START (SV_INODE_START + SV_NINODES) // block 33
 #define SV_DATA_END (SV_DATA_START + SV_NDATA_BLKS) // 161
-#define SV_NO_BLOCK (-1) // "no block" sentinel for block pointers
+#define SV_NO_BLOCK (-1)  // "no block" sentinel for block pointers
+#define SV_MODE_FREE (-1) // svi_mode of an unused inode
 
 // NOTE: Declared in sys/disk/disk.c
 void get_disk_name(char *to_ret);
@@ -82,6 +83,7 @@ int main() {
     }
     root_inode.svi_direct_blocks[0] = SV_DATA_START;
     root_inode.svi_indirect_block = SV_NO_BLOCK;
+    root_inode.svi_mode = DIRECTORY;
     write_block(SV_INODE_START, &root_inode, sizeof(root_inode));
 
     // Other inodes are free and point to the next one
@@ -89,6 +91,7 @@ int main() {
         svfs_inode_t inode;
         memset(&inode, 0, sizeof(inode));
         inode.svi_un.svi_next_free = i + 1;
+        inode.svi_mode = SV_MODE_FREE;
 
         // Write all of the inodes (implicit list)
         write_block(i, &inode, sizeof(inode));
@@ -98,6 +101,7 @@ int main() {
     svfs_inode_t last_inode;
     memset(&last_inode, 0, sizeof(last_inode));
     last_inode.svi_un.svi_next_free = SV_NO_BLOCK;
+    last_inode.svi_mode = SV_MODE_FREE;
     write_block(SV_DATA_START - 1, &last_inode, sizeof(last_inode));
 
     // ROOT DATABLOCK
