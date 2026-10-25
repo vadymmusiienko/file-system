@@ -108,8 +108,10 @@ int main() {
     dirent_t root_data[2];
     memset(root_data, 0, sizeof(root_data));
     root_data[0].d_ino = SV_INODE_START;
+    root_data[0].d_off = sizeof(dirent_t); // Position of the next entry
     strcpy(root_data[0].d_name, ".");
     root_data[1].d_ino = SV_INODE_START;
+    root_data[1].d_off = 2 * sizeof(dirent_t);
     strcpy(root_data[1].d_name, "..");
     write_block(SV_DATA_START, root_data, sizeof(root_data));
 
